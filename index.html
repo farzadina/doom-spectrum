@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AI Future — Doom Spectrum</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: -apple-system, system-ui, sans-serif; background: #fff; color: #111; }
+
+  .stage-wrap { position: absolute; left: 20px; right: 20px; top: 10px; bottom: 60px; overflow: hidden; border-radius: 4px; }
+  .stage {
+    position: absolute; inset: 0;
+    background: linear-gradient(to right,
+      #cfe5df 0%,
+      #e0eae0 18%,
+      #ede4cf 38%,
+      #efdec0 55%,
+      #f1cfc0 75%,
+      #f3c0bb 90%,
+      #efb1ac 100%);
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 4px;
+    transform-origin: 0 0;
+    transition: transform 0.12s ease-out;
+    will-change: transform;
+    overflow: visible;
+  }
+  .stage.dragging { transition: none; cursor: grabbing; }
+  .stage-wrap.zoomed { cursor: grab; }
+  .reset-btn {
+    position: absolute; top: 10px; right: 10px; z-index: 200;
+    padding: 5px 10px; font-size: 11px;
+    background: #fff; border: 1px solid #ccc; border-radius: 4px;
+    cursor: pointer; opacity: 0; transition: opacity 0.15s;
+    font-family: inherit;
+  }
+  .stage-wrap.zoomed .reset-btn { opacity: 1; }
+
+  .section-label {
+    position: absolute; top: 12px;
+    transform: translateX(-50%);
+    font-size: 17px; font-weight: 600;
+    color: rgba(0,0,0,0.45);
+    letter-spacing: 0.04em; text-transform: uppercase;
+    text-align: center;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .section-label .sub {
+    display: block; font-weight: 400; font-size: 12px; color: rgba(0,0,0,0.4);
+    text-transform: none; letter-spacing: 0; margin-top: 3px;
+  }
+
+  /* Urgency dashed-line row sits inside the board, behind the thumbs */
+  .urgency-row {
+    position: absolute; left: 12px; right: 12px; bottom: 16px;
+    display: flex; align-items: center; gap: 14px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .urg-block { flex-shrink: 0; text-align: center; line-height: 1.2; }
+  .urg-big { font-size: 14px; font-weight: 700; letter-spacing: 0.10em; color: #2a2a2a; }
+  .urg-sub { font-size: 10px; font-weight: 500; letter-spacing: 0.08em; color: #6a6a6a; margin-top: 4px; }
+  .urg-arrow {
+    flex: 1; height: 0; position: relative;
+    border-top: 1.5px dashed rgba(80,80,80,0.55);
+    align-self: center;
+  }
+  .urg-arrow::after {
+    content: ""; position: absolute; right: -1px; top: 50%;
+    border: 5px solid transparent;
+    border-left-color: rgba(80,80,80,0.7); border-left-width: 8px;
+    transform: translateY(-50%);
+  }
+
+  /* Bottom strip: urgency-band bar + score ticks */
+  .bottom-strip {
+    position: absolute; left: 20px; right: 20px; bottom: 8px;
+    height: 48px;
+    display: flex; flex-direction: column;
+  }
+
+  .urgency-bar {
+    display: flex; height: 28px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 4px 0 6px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    background: linear-gradient(to right,
+      #1f6e62 0%,
+      #4a9588 12%,
+      #9bbf94 26%,
+      #cfc9a0 44%,
+      #ddb78a 60%,
+      #d28567 76%,
+      #c14939 90%,
+      #a82a22 100%);
+  }
+  .urgency-bar > div {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.10em;
+    text-transform: uppercase;
+    white-space: nowrap; overflow: hidden;
+  }
+  .urgency-bar .ub-kills  { flex: 0 0 18%; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.45); }
+  .urgency-bar .ub-builds { flex: 1;       color: rgba(40,28,16,0.85); text-shadow: 0 1px 0 rgba(255,255,255,0.35); }
+  .urgency-bar .ub-fear   { flex: 0 0 22%; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.45); }
+
+  .axis { position: relative; height: 16px; }
+  .tick { position: absolute; transform: translateX(-50%); font-size: 11px; color: #777; }
+
+  .thumb { position: absolute; width: 178px; height: 101px; transform: translateX(-50%); z-index: 1; cursor: grab; transition: top 0.2s ease, left 0.2s ease; }
+  .thumb.dragging-thumb { transition: none; cursor: grabbing; opacity: 0.9; }
+  .thumb:hover { z-index: 100; }
+  .thumb .img-wrap { display: block; width: 100%; height: 100%; transition: transform 0.25s cubic-bezier(.2,.8,.2,1); transform-origin: center center; }
+  .thumb .img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 3px; box-shadow: 0 2px 5px rgba(0,0,0,0.18); transition: box-shadow 0.25s ease; pointer-events: none; -webkit-user-drag: none; user-select: none; }
+  .thumb:not(.dragging-thumb):hover .img-wrap { transform: scale(3); }
+  .thumb:not(.dragging-thumb):hover .img-wrap img { box-shadow: 0 10px 32px rgba(0,0,0,0.4); }
+
+  .thumb .views-badge {
+    position: absolute;
+    bottom: 5px; left: 5px;
+    background: rgba(0,0,0,0.78);
+    color: #fff;
+    font-size: 11px; font-weight: 500;
+    line-height: 1;
+    padding: 3px 5px;
+    border-radius: 3px;
+    pointer-events: none;
+    z-index: 3;
+    transition: opacity 0.15s;
+  }
+  .thumb:not(.dragging-thumb):hover .views-badge { opacity: 0; }
+
+  .thumb .label {
+    position: absolute; left: 50%; top: calc(100% + 130px);
+    transform: translateX(-50%);
+    background: rgba(20,20,20,0.94); color: #fff;
+    padding: 5px 9px; border-radius: 4px;
+    text-align: center; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+    max-width: 600px; min-width: 120px; width: max-content;
+  }
+  .thumb:not(.dragging-thumb):hover .label { opacity: 1; transition-delay: 0.15s; }
+  .thumb .label .t { font-size: 16.5px; line-height: 1.3; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 480px; }
+  .thumb .label .m { font-size: 15px; line-height: 1.3; color: #bbb; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Drop indicator overlay */
+  .drop-indicator {
+    position: absolute; pointer-events: none;
+    width: 178px; height: 4px;
+    background: rgba(50, 130, 220, 0.85);
+    border-radius: 2px;
+    transform: translateX(-50%);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.6);
+    z-index: 50;
+    display: none;
+  }
+</style>
+</head>
+<body>
+  <div class="stage-wrap" id="wrap">
+    <button class="reset-btn" id="resetBtn" title="Reset zoom (or double-click)">Reset zoom</button>
+    <div class="stage" id="stage">
+      <div class="section-label" style="left: 10%">low-stakes<span class="sub">0 – 2</span></div>
+      <div class="section-label" style="left: 30%">Curious / measured<span class="sub">3 – 4</span></div>
+      <div class="section-label" style="left: 50%">Stakes-forward<span class="sub">5 – 6</span></div>
+      <div class="section-label" style="left: 70%">doom claim<span class="sub">7 – 8</span></div>
+      <div class="section-label" style="left: 90%">Full doomer<span class="sub">9 – 10</span></div>
+
+      <div class="urgency-row">
+        <div class="urg-block">
+          <div class="urg-big">TOO LIGHT</div>
+          <div class="urg-sub">LOW URGENCY</div>
+        </div>
+        <div class="urg-arrow"></div>
+        <div class="urg-block">
+          <div class="urg-big">JUST RIGHT</div>
+          <div class="urg-sub">HIGH URGENCY</div>
+        </div>
+        <div class="urg-arrow"></div>
+        <div class="urg-block">
+          <div class="urg-big">TOO SCARY</div>
+        </div>
+      </div>
+
+      <div class="drop-indicator" id="dropIndicator"></div>
+    </div>
+  </div>
+
+  <div class="bottom-strip">
+    <div class="urgency-bar">
+      <div class="ub-kills">KILLS URGENCY</div>
+      <div class="ub-builds">BUILDS URGENCY</div>
+      <div class="ub-fear">CREATES FEAR</div>
+    </div>
+
+    <div class="axis" id="axis"></div>
+  </div>
+
+  <script>
+    var INITIAL_DATA = [{"title": "This best-selling book is freaking out national security advisors", "id": "Nl7-bRFSZBs", "score": 10, "views": 1610155}, {"title": "It Begins: An AI Literally Attempted Murder To Avoid Shutdown", "id": "f9HwA5IR-sg", "score": 10, "views": 10681041}, {"title": "AI is MUTATING: And We Don't Know What It is Doing | Connor Leahy", "id": "rf2KFVcKQdQ", "score": 9, "views": 958730}, {"title": "We’ve Lost Control of AI", "id": "90C3XVjUMqE", "score": 9, "views": 1805358}, {"title": "AI Scientists Think There’s A Monster Inside ChatGPT", "id": "sDUX0M0IdfY", "score": 9, "views": 1357886}, {"title": "Why AI experts say humans may have two years left. Stephen Fry", "id": "uMwjKyAPR34", "score": 9, "views": 1042319}, {"title": "Something Strange Is Happening.", "id": "POtESzTaz0k", "score": 9, "views": 479993}, {"title": "If you remember one AI disaster, make it this one", "id": "r_9wkavYt4Y", "score": 9, "views": 3462878}, {"title": "AI Expert: Here Is What The World Looks Like In 2 Years! Tristan Harris", "id": "BFU1OCkhBwo", "score": 9, "views": 4846650}, {"title": "What happens if AI just keeps getting smarter?", "id": "0bnxF9YfyFI", "score": 8, "views": 1666341}, {"title": "Why AI Researchers Are Quitting and Panicking on the Way Out", "id": "rtT87iAm_SM", "score": 8, "views": 1180817}, {"title": "The REAL Reason No One Knows What’s Coming With AI", "id": "LYgLTraIe2I", "score": 8, "views": 1250388}, {"title": "The AI Safety Expert: These Are The Only 5 Jobs That Will Remain In 2030! - Dr. Roman Yampolskiy", "id": "UclrVWafRAI", "score": 8, "views": 17710228}, {"title": "⁠It Begins: AI Is Now Improving Itself", "id": "mERBjn6JotM", "score": 8, "views": 802148}, {"title": "AI Experts: These Are The Only 5 Jobs That Will Remain in 2030!", "id": "GCjmK66x_Yk", "score": 8, "views": 985662}, {"title": "We’re Racing Toward AI We Can’t Control | For Humanity #79", "id": "LQHp90R5wEE", "score": 8, "views": 183971}, {"title": "The Secret Plan Behind Artificial Intelligence", "id": "WP5sQhGlxj4", "score": 8, "views": 1831435}, {"title": "Godfather of AI WARNS: \"You Have No Idea What's Coming\"", "id": "5KmopXwjXik", "score": 8, "views": 6340987}, {"title": "AI Is A Massive Problem. Here's Why.", "id": "A3HjNYDIhGU", "score": 7, "views": 730877}, {"title": "We're Not Ready for Superintelligence", "id": "5KVDDfAkRgc", "score": 7, "views": 10646943}, {"title": "AI2027: Is this how AI might destroy humanity? - BBC World Service", "id": "1UufaK3pQMg", "score": 7, "views": 11263959}, {"title": "AI 2027: A Realistic Scenario of AI Takeover", "id": "k_onqn68GHY", "score": 7, "views": 4435137}, {"title": "Robot Plumbers, Robot Armies, and Our Imminent A.I. Future | Interesting Times with Ross Douthat", "id": "wNJJ9QUabkA", "score": 7, "views": 661854}, {"title": "This is how humanity loses control of AI | Battle Board | Daily Mail", "id": "Zv941c6yfLE", "score": 7, "views": 102243}, {"title": "What Happens If AI Just Keeps Getting Smarter?", "id": "c9qsHS4GP5M", "score": 7, "views": 890326}, {"title": "Can we just... pause AI?", "id": "tUB_uvSqiw8", "score": 6, "views": 99690}, {"title": "Scientists Discuss the AI Alignment Problem", "id": "JRQDc55Aido", "score": 6, "views": 312955}, {"title": "A brief update on the AI apocalypse", "id": "QtiTjXuZh30", "score": 6, "views": 100521}, {"title": "Experts tested what AI would do to save itself. Here's what happened.", "id": "BcQb_8hmxSI", "score": 6, "views": 2481341}, {"title": "AI 2027: month-by-month model of intelligence explosion — Scott Alexander & Daniel Kokotajlo", "id": "htOvH12T7mU", "score": 6, "views": 337026}, {"title": "We're Not Ready for Artificial General Intelligence - Will MacAskill", "id": "sm7n1KfBXeI", "score": 5, "views": 149244}, {"title": "Demis Hassabis On The Future of Work in the Age of AI", "id": "CRraHg4Ks_g", "score": 5, "views": 751097}, {"title": "How AI tells Israel who to bomb", "id": "xGqYbXL3kZc", "score": 5, "views": 820316}, {"title": "The AI Bubble Is About To Burst", "id": "2FohHLZTHmM", "score": 5, "views": 532965}, {"title": "She Fell in Love with ChatGPT Model 4o | For Humanity Ep. 80", "id": "Mqek7K1w6_A", "score": 5, "views": 149540}, {"title": "The Marketing Expert Who Wants to Save the World from AI | For Humanity 82", "id": "AAw2yd2WKgo", "score": 5, "views": 492371}, {"title": "MIT's AI Discovers New Science - \"Intelligence Explosion\"", "id": "KPBqFQKtqP0", "score": 5, "views": 165935}, {"title": "O Verdadeiro Problema de Inteligências Artificiais", "id": "IH-wBijX53M", "score": 5, "views": 2215410}, {"title": "We Investigated Al Psychosis. What We Found Will Shock You", "id": "zkGk_A4noxI", "score": 5, "views": 2510173}, {"title": "Sam Harris: Is AI aligned with our human interests?", "id": "OjBKDaFw_2I", "score": 4, "views": 88893}, {"title": "Full interview: \"Godfather of AI\" shares prediction for future of AI, issues warnings", "id": "qyH3NxFz3Aw", "score": 4, "views": 1241339}, {"title": "A.I. ‐ Humanity's Final Invention?", "id": "fa8k8IQ1_X0", "score": 4, "views": 11812226}, {"title": "Taking AI Doom Seriously For 62 Minutes", "id": "Qg5QXY_qZuI", "score": 4, "views": 428600}, {"title": "The Real Reason Robots Shouldn’t Look Like Humans | Supercut", "id": "eLVAMG_3fLg", "score": 4, "views": 5873537}, {"title": "Scientists Left 1000 AIs Alone in Minecraft. They Created A Civilization.", "id": "uRDBco-cSK4", "score": 4, "views": 2013013}, {"title": "Max Tegmark Says Physics Just Swallowed AI", "id": "-gekVfUAS7c", "score": 4, "views": 287147}, {"title": "We Are Underestimating AI", "id": "Z8BQr07pQa0", "score": 4, "views": 333706}, {"title": "Harvard just discovered what AI actually is", "id": "nDL3Ch7Nz8c", "score": 4, "views": 872958}, {"title": "The Future of AI According to Science", "id": "zWM_vXdesqE", "score": 3, "views": 208314}, {"title": "What We Get Wrong About AI (feat. former Google CEO)", "id": "MWHN6ojlVXI", "score": 3, "views": 1336109}, {"title": "What Did Ilya See?", "id": "glWvwvhZkQ8", "score": 3, "views": 488768}, {"title": "Anthropic’s New AI Solves Problems…By Cheating", "id": "Ersv1ogj7Jo", "score": 3, "views": 163422}, {"title": "You Actually Do Need to Understand Mythos", "id": "V6pgZKVcKpw", "score": 3, "views": 1156152}, {"title": "AI 2027 Co-Authors Map Out AI’s Spread of Outcomes on Humanity", "id": "yxDTbFZbmLg", "score": 3, "views": 110590}, {"title": "Countdown to Superintelligence | Sam Harris and Daniel Kokatajlo (Making Sense #420)", "id": "zqbXolVH2h8", "score": 3, "views": 190587}, {"title": "Why AI Agents are either the best or worst thing we’ve ever built", "id": "WnzR5aOElvw", "score": 3, "views": 842305}, {"title": "The Entire History of Artificial Intelligence (Last 100 Years)", "id": "mSd9nmPM7Vg", "score": 3, "views": 223320}, {"title": "the state of the ai bubble", "id": "2U6bJEFC97c", "score": 3, "views": 1790221}, {"title": "What a 100-year-old horse teaches us about AI", "id": "eP1dSWFqKVs", "score": 2, "views": 433140}, {"title": "Can clean energy handle the AI boom?", "id": "YGfJeH5HRDQ", "score": 2, "views": 320692}, {"title": "Sam Altman Shows Me GPT 5... And What's Next", "id": "hmtuvNfytjM", "score": 2, "views": 4609437}, {"title": "How difficult is AI alignment? | Anthropic Research Salon", "id": "IPmt8b-qLgk", "score": 1, "views": 41658}, {"title": "GAEA Talks - The Future of AI (Part 2) with Professor Yi-Zhe Song", "id": "eOXnlbKndDY", "score": 1, "views": 279937}, {"title": "When AIs act emotional", "id": "D4XTefP3Lsc", "score": 1, "views": 277835}, {"title": "Recursion Is The Next Scaling Law In AI", "id": "DGtUUMNYLcc", "score": 1, "views": 12984}];
+    var META_KEY = 'ai_future_video_meta_v2';
+    var LAYOUT_KEY = 'ai_future_spectrum_layout_v1';
+    var SECTIONS = [
+      { lo: 0, hi: 2, left: 0 },
+      { lo: 3, hi: 4, left: 20 },
+      { lo: 5, hi: 6, left: 40 },
+      { lo: 7, hi: 8, left: 60 },
+      { lo: 9, hi: 10, left: 80 }
+    ];
+    var THUMB_W = 178, THUMB_H = 101, HALF = THUMB_W / 2;
+    var TOP_OFFSET = 95;
+    var ROW_HEIGHT = 108;
+
+    var stage = document.getElementById('stage');
+    var wrap = document.getElementById('wrap');
+    var axis = document.getElementById('axis');
+    var dropIndicator = document.getElementById('dropIndicator');
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, function (c) {
+        return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c];
+      });
+    }
+    function loadJSON(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+      catch (e) { return fallback; }
+    }
+    function saveJSON(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+    function formatViews(n) {
+      if (n == null || isNaN(n)) return '';
+      n = Number(n);
+      var s;
+      if (n >= 1e9) s = (n/1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+      else if (n >= 1e6) s = (n/1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+      else if (n >= 1e3) s = (n/1e3).toFixed(n >= 1e4 ? 0 : 1).replace(/\.0$/, '') + 'K';
+      else s = String(n);
+      return s + ' views';
+    }
+    function metaLine(channel, views) {
+      var parts = [];
+      if (channel) parts.push(escapeHtml(channel));
+      var v = formatViews(views);
+      if (v) parts.push(escapeHtml(v));
+      return parts.join(' · ');
+    }
+
+    // Apply persisted layout (if any) to INITIAL_DATA, producing current DATA
+    var DATA = (function () {
+      var saved = loadJSON(LAYOUT_KEY, null);
+      if (!saved || !Array.isArray(saved)) return INITIAL_DATA.slice();
+      var byId = {};
+      INITIAL_DATA.forEach(function (d) { byId[d.id] = d; });
+      var result = [];
+      saved.forEach(function (entry) {
+        var d = byId[entry.id];
+        if (!d) return;
+        var copy = Object.assign({}, d);
+        if (typeof entry.score === 'number') copy.score = entry.score;
+        result.push(copy);
+        delete byId[entry.id];
+      });
+      // Append any items not in saved (newly-added)
+      Object.keys(byId).forEach(function (id) { result.push(Object.assign({}, byId[id])); });
+      return result;
+    })();
+
+    function saveLayout() {
+      saveJSON(LAYOUT_KEY, DATA.map(function (d) { return { id: d.id, score: d.score }; }));
+    }
+
+    var metaCache = loadJSON(META_KEY, {});
+    var byScore = {};
+    var scoreXMap = {};
+    var thumbsById = {};
+
+    function rebuildLayoutMaps() {
+      byScore = {};
+      DATA.forEach(function (d) { (byScore[d.score] = byScore[d.score] || []).push(d); });
+
+      scoreXMap = {};
+      SECTIONS.forEach(function (sec) {
+        var pop = [];
+        for (var s = sec.lo; s <= sec.hi; s++) {
+          if (byScore[s] && byScore[s].length) pop.push(s);
+        }
+        pop.forEach(function (s, i) {
+          scoreXMap[s] = sec.left + 20 * (i + 0.5) / pop.length;
+        });
+      });
+    }
+
+    function renderAxis() {
+      axis.innerHTML = '';
+      Object.keys(scoreXMap).map(Number).sort(function (a, b) { return a - b; }).forEach(function (s) {
+        var t = document.createElement('div');
+        t.className = 'tick'; t.textContent = s;
+        t.style.left = scoreXMap[s] + '%';
+        axis.appendChild(t);
+      });
+    }
+
+    function thumbX(s) {
+      // Returns CSS calc string positioning the thumb center at scoreXMap[s] within an inset stage
+      var pct = scoreXMap[s];
+      return 'calc(' + HALF + 'px + (100% - ' + THUMB_W + 'px) * ' + (pct / 100) + ')';
+    }
+    function thumbY(idx) { return (TOP_OFFSET + idx * ROW_HEIGHT) + 'px'; }
+
+    function makeThumb(d) {
+      var cached = metaCache[d.id] || {};
+      var channel = cached.channel || '';
+      var views = (d.views != null ? d.views : cached.views);
+
+      var img = document.createElement('img');
+      img.src = 'https://i.ytimg.com/vi/' + d.id + '/mqdefault.jpg';
+      img.loading = 'lazy';
+      img.draggable = false;
+      img.onerror = function () { this.onerror = null; this.src = 'https://i.ytimg.com/vi/' + d.id + '/hqdefault.jpg'; };
+
+      var a = document.createElement('a');
+      a.className = 'img-wrap';
+      a.href = 'https://www.youtube.com/watch?v=' + d.id;
+      a.target = '_blank'; a.rel = 'noopener';
+      a.draggable = false;
+      a.appendChild(img);
+
+      var label = document.createElement('div');
+      label.className = 'label';
+      label.innerHTML =
+        '<div class="t">' + escapeHtml(d.title) + '</div>' +
+        '<div class="m">' + metaLine(channel, views) + '</div>';
+
+      var t = document.createElement('div');
+      t.className = 'thumb';
+      t.dataset.id = d.id;
+      t.appendChild(a);
+
+      var viewsText = formatViews(views);
+      if (viewsText) {
+        var badge = document.createElement('div');
+        badge.className = 'views-badge';
+        badge.textContent = viewsText;
+        t.appendChild(badge);
+      }
+
+      t.appendChild(label);
+
+      attachDragHandlers(t, d, a);
+      return t;
+    }
+
+    function renderThumbs() {
+      // Clear existing
+      Array.prototype.slice.call(stage.querySelectorAll('.thumb')).forEach(function (el) { el.remove(); });
+      thumbsById = {};
+      Object.keys(byScore).forEach(function (s) {
+        var items = byScore[s];
+        var sNum = Number(s);
+        items.forEach(function (d, i) {
+          var t = makeThumb(d);
+          t.style.left = thumbX(sNum);
+          t.style.top  = thumbY(i);
+          stage.appendChild(t);
+          thumbsById[d.id] = t;
+        });
+      });
+    }
+
+    function rebuildAll() {
+      rebuildLayoutMaps();
+      renderAxis();
+      renderThumbs();
+    }
+
+    function refreshLabel(d) {
+      var el = thumbsById[d.id]; if (!el) return;
+      var c = (metaCache[d.id] || {}).channel || '';
+      var v = (d.views != null ? d.views : (metaCache[d.id] || {}).views);
+      var m = el.querySelector('.label .m');
+      if (m) m.innerHTML = metaLine(c, v);
+    }
+
+    function fetchChannel(id) {
+      var primary = 'https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=' + id + '&format=json';
+      var fallback = 'https://noembed.com/embed?url=https://www.youtube.com/watch?v=' + id;
+      return fetch(primary).then(function (r) {
+        if (!r.ok) throw 0; return r.json();
+      }).catch(function () {
+        return fetch(fallback).then(function (r) { return r.json(); });
+      }).then(function (j) { return j && j.author_name; }).catch(function () { return null; });
+    }
+
+    function fetchMissingChannels() {
+      DATA.forEach(function (d) {
+        var entry = metaCache[d.id] || {};
+        if (entry.channel) return;
+        fetchChannel(d.id).then(function (channel) {
+          if (!channel) return;
+          entry.channel = channel;
+          metaCache[d.id] = entry;
+          saveJSON(META_KEY, metaCache);
+          refreshLabel(d);
+        });
+      });
+    }
+
+    // ---------- Drag-and-drop ----------
+    var zoomState = { scale: 1, tx: 0, ty: 0 };
+    var DRAG_THRESHOLD = 4;
+
+    function attachDragHandlers(thumbEl, d, linkEl) {
+      var dragInfo = null;
+      var didDrag = false;
+
+      thumbEl.addEventListener('mousedown', function (e) {
+        if (e.button !== 0) return;
+        // When zoomed in, let pan-drag handle it (so user can pan around).
+        if (zoomState.scale > 1.001) return;
+
+        dragInfo = {
+          startX: e.clientX, startY: e.clientY,
+          moved: false,
+          // Compute thumb's current visual position as offset within wrap (used to keep thumb under cursor)
+          rect: thumbEl.getBoundingClientRect(),
+          wrapRect: wrap.getBoundingClientRect()
+        };
+        didDrag = false;
+
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+        // Don't preventDefault here — that would prevent text-selection cancellation but also block focus.
+      });
+
+      function onMove(e) {
+        if (!dragInfo) return;
+        var dx = e.clientX - dragInfo.startX;
+        var dy = e.clientY - dragInfo.startY;
+        if (!dragInfo.moved && Math.abs(dx) + Math.abs(dy) > DRAG_THRESHOLD) {
+          dragInfo.moved = true;
+          didDrag = true;
+          thumbEl.classList.add('dragging-thumb');
+          thumbEl.style.transition = 'none';
+          thumbEl.style.zIndex = '500';
+        }
+        if (dragInfo.moved) {
+          e.preventDefault();
+          // Apply visual offset (kept on top of the original translateX(-50%))
+          thumbEl.style.transform = 'translateX(-50%) translate(' + dx + 'px, ' + dy + 'px)';
+          updateDropIndicator(e);
+        }
+      }
+
+      function onUp(e) {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        if (!dragInfo) return;
+        var info = dragInfo;
+        dragInfo = null;
+
+        if (!info.moved) return; // pure click — link will navigate normally
+
+        // Compute drop target
+        var target = computeDropTarget(e);
+
+        // Reset visual state
+        thumbEl.classList.remove('dragging-thumb');
+        thumbEl.style.transition = '';
+        thumbEl.style.transform = '';
+        thumbEl.style.zIndex = '';
+        dropIndicator.style.display = 'none';
+
+        applyDrop(d, target);
+      }
+
+      // Suppress link click after a drag
+      linkEl.addEventListener('click', function (e) {
+        if (didDrag) {
+          e.preventDefault();
+          didDrag = false;
+        }
+      });
+    }
+
+    function viewportToStageCoords(e) {
+      var wrapRect = wrap.getBoundingClientRect();
+      var x = (e.clientX - wrapRect.left - zoomState.tx) / zoomState.scale;
+      var y = (e.clientY - wrapRect.top  - zoomState.ty) / zoomState.scale;
+      return { x: x, y: y, stageW: stage.offsetWidth, stageH: stage.offsetHeight };
+    }
+
+    function findClosestPopulatedScoreToX(xPct) {
+      // First, narrow to the section that contains xPct (each section is 20% wide)
+      var sec = SECTIONS[Math.max(0, Math.min(4, Math.floor(xPct / 20)))];
+      var pop = [];
+      for (var s = sec.lo; s <= sec.hi; s++) {
+        if (byScore[s] && byScore[s].length) pop.push(s);
+      }
+      if (pop.length === 0) {
+        // Section is empty — pick its middle integer score as the new target
+        return Math.floor((sec.lo + sec.hi) / 2);
+      }
+      if (pop.length === 1) return pop[0];
+      // Map x within section to nearest of the populated scores at their evenly-spaced centers
+      var localX = xPct - sec.left; // 0..20
+      // Find which sub-cell (of pop.length) the cursor is in
+      var idx = Math.max(0, Math.min(pop.length - 1, Math.floor(localX / (20 / pop.length))));
+      return pop[idx];
+    }
+
+    function computeDropTarget(e) {
+      var c = viewportToStageCoords(e);
+      var xPct = (c.x / c.stageW) * 100;
+      var score = findClosestPopulatedScoreToX(xPct);
+      var stackIdx = Math.max(0, Math.round((c.y - TOP_OFFSET) / ROW_HEIGHT));
+      return { score: score, stackIdx: stackIdx };
+    }
+
+    function updateDropIndicator(e) {
+      var target = computeDropTarget(e);
+      // Show the indicator above the row at target.stackIdx in target.score column.
+      // Position is calculated in stage (untransformed) coords.
+      var stageW = stage.offsetWidth;
+      // Need a numeric x position; scoreXMap might not have this score yet if column is currently empty.
+      var xPct;
+      if (scoreXMap[target.score] != null) {
+        xPct = scoreXMap[target.score];
+      } else {
+        // empty section — use section center
+        var sec = SECTIONS.find(function (s) { return target.score >= s.lo && target.score <= s.hi; });
+        xPct = sec.left + 10;
+      }
+      var insetW = stageW - THUMB_W;
+      var leftPx = HALF + insetW * (xPct / 100);
+      var topPx = TOP_OFFSET + target.stackIdx * ROW_HEIGHT - 4;
+      dropIndicator.style.left = leftPx + 'px';
+      dropIndicator.style.top  = topPx + 'px';
+      dropIndicator.style.display = 'block';
+    }
+
+    function applyDrop(d, target) {
+      var oldIdx = DATA.indexOf(d);
+      if (oldIdx >= 0) DATA.splice(oldIdx, 1);
+      d.score = target.score;
+
+      // Insert into DATA at position such that it becomes the target.stackIdx-th item with that score.
+      var sameScoreSeen = 0;
+      var inserted = false;
+      for (var i = 0; i < DATA.length; i++) {
+        if (DATA[i].score === target.score) {
+          if (sameScoreSeen === target.stackIdx) {
+            DATA.splice(i, 0, d);
+            inserted = true; break;
+          }
+          sameScoreSeen++;
+        }
+      }
+      if (!inserted) DATA.push(d);
+
+      saveLayout();
+      rebuildAll();
+    }
+
+    // ---------- Init ----------
+    rebuildAll();
+    fetchMissingChannels();
+
+    // ---------- Zoom + pan ----------
+    (function () {
+      var resetBtn = document.getElementById('resetBtn');
+      var MIN = 1, MAX = 12;
+
+      function apply() {
+        stage.style.transform = 'translate(' + zoomState.tx + 'px, ' + zoomState.ty + 'px) scale(' + zoomState.scale + ')';
+        wrap.classList.toggle('zoomed', zoomState.scale > 1.001);
+      }
+      function reset() { zoomState.scale = 1; zoomState.tx = 0; zoomState.ty = 0; apply(); }
+
+      wrap.addEventListener('wheel', function (e) {
+        e.preventDefault();
+        var rect = wrap.getBoundingClientRect();
+        var mx = e.clientX - rect.left;
+        var my = e.clientY - rect.top;
+  
