@@ -582,4 +582,44 @@
         var rect = wrap.getBoundingClientRect();
         var mx = e.clientX - rect.left;
         var my = e.clientY - rect.top;
+        var factor = Math.exp(-e.deltaY * 0.0015);
+        var newScale = Math.max(MIN, Math.min(MAX, zoomState.scale * factor));
+        if (newScale === zoomState.scale) return;
+        var k = newScale / zoomState.scale;
+        zoomState.tx = mx - (mx - zoomState.tx) * k;
+        zoomState.ty = my - (my - zoomState.ty) * k;
+        zoomState.scale = newScale;
+        if (zoomState.scale <= MIN + 0.0001) { zoomState.scale = MIN; zoomState.tx = 0; zoomState.ty = 0; }
+        apply();
+      }, { passive: false });
+
+      var dragging = false, lastX = 0, lastY = 0;
+      wrap.addEventListener('mousedown', function (e) {
+        if (e.button !== 0) return;
+        if (zoomState.scale <= MIN + 0.0001) return;
+        if (e.target.closest('.thumb')) return;
+        dragging = true;
+        lastX = e.clientX; lastY = e.clientY;
+        stage.classList.add('dragging');
+      });
+      window.addEventListener('mousemove', function (e) {
+        if (!dragging) return;
+        zoomState.tx += e.clientX - lastX; zoomState.ty += e.clientY - lastY;
+        lastX = e.clientX; lastY = e.clientY;
+        stage.style.transform = 'translate(' + zoomState.tx + 'px, ' + zoomState.ty + 'px) scale(' + zoomState.scale + ')';
+      });
+      window.addEventListener('mouseup', function () {
+        if (dragging) stage.classList.remove('dragging');
+        dragging = false;
+      });
+
+      wrap.addEventListener('dblclick', function (e) {
+        if (e.target.closest('.thumb')) return;
+        reset();
+      });
+      resetBtn.addEventListener('click', reset);
+    })();
+  </script>
+</body>
+</html>
   
