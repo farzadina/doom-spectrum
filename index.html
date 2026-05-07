@@ -53,18 +53,6 @@
   .thumb:not(.dragging-thumb):hover .label { opacity: 1; transition-delay: 0.15s; }
   .thumb .label .t { font-size: 16.5px; line-height: 1.3; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 480px; }
   .thumb .label .m { font-size: 15px; line-height: 1.3; color: #bbb; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .cumulative-page { position: relative; width: 100%; padding: 60px 20px 60px; box-sizing: border-box; background: #fff; }
-  .cumulative-page h2 { margin: 0 0 6px; font-size: 22px; font-weight: 600; color: #1a1a1a; }
-  .cumulative-page .sub { margin: 0 0 24px; font-size: 13px; color: #666; }
-  .cum-chart-wrap { position: relative; width: 100%; height: 460px; }
-  .cum-chart-wrap svg { width: 100%; height: 100%; display: block; }
-  .cum-chart-wrap .y-grid line { stroke: #ececec; stroke-width: 1; vector-effect: non-scaling-stroke; }
-  .cum-chart-wrap .y-grid text { font-size: 10px; fill: #999; }
-  .cum-chart-wrap .x-axis text { font-size: 11px; fill: #777; }
-  .cum-chart-wrap .area { fill: url(#cumGrad); opacity: 0.85; }
-  .cum-chart-wrap .curve { fill: none; stroke: #b03d2c; stroke-width: 2.25; vector-effect: non-scaling-stroke; }
-  .cum-chart-wrap .point { fill: #b03d2c; stroke: #fff; stroke-width: 1.5; }
-  .cum-chart-wrap .point-label { font-size: 11px; fill: #444; font-weight: 500; }
   .drop-indicator { position: absolute; pointer-events: none; width: 178px; height: 4px; background: rgba(50, 130, 220, 0.85); border-radius: 2px; transform: translateX(-50%); box-shadow: 0 0 0 2px rgba(255,255,255,0.6); z-index: 50; display: none; }
 </style>
 </head>
@@ -106,10 +94,6 @@
     </div>
     <div class="axis" id="axis"></div>
   </div>
- </div>
- <div class="cumulative-page">
-  <h2>average views</h2>
-  <div class="cum-chart-wrap"><svg id="cumChart"></svg></div>
  </div>
 <script>
 var INITIAL_DATA = [{"title": "This best-selling book is freaking out national security advisors", "id": "Nl7-bRFSZBs", "score": 10, "views": 1610155}, {"title": "It Begins: An AI Literally Attempted Murder To Avoid Shutdown", "id": "f9HwA5IR-sg", "score": 10, "views": 10681041}, {"title": "AI is MUTATING: And We Don't Know What It is Doing | Connor Leahy", "id": "rf2KFVcKQdQ", "score": 9, "views": 958730}, {"title": "We’ve Lost Control of AI", "id": "90C3XVjUMqE", "score": 9, "views": 1805358}, {"title": "AI Scientists Think There’s A Monster Inside ChatGPT", "id": "sDUX0M0IdfY", "score": 9, "views": 1357886}, {"title": "Why AI experts say humans may have two years left. Stephen Fry", "id": "uMwjKyAPR34", "score": 9, "views": 1042319}, {"title": "Something Strange Is Happening.", "id": "POtESzTaz0k", "score": 9, "views": 479993}, {"title": "If you remember one AI disaster, make it this one", "id": "r_9wkavYt4Y", "score": 9, "views": 3462878}, {"title": "AI Expert: Here Is What The World Looks Like In 2 Years! Tristan Harris", "id": "BFU1OCkhBwo", "score": 9, "views": 4846650}, {"title": "What happens if AI just keeps getting smarter?", "id": "0bnxF9YfyFI", "score": 8, "views": 1666341}, {"title": "Why AI Researchers Are Quitting and Panicking on the Way Out", "id": "rtT87iAm_SM", "score": 8, "views": 1180817}, {"title": "The REAL Reason No One Knows What’s Coming With AI", "id": "LYgLTraIe2I", "score": 8, "views": 1250388}, {"title": "The AI Safety Expert: These Are The Only 5 Jobs That Will Remain In 2030! - Dr. Roman Yampolskiy", "id": "UclrVWafRAI", "score": 8, "views": 17710228}, {"title": "⁠It Begins: AI Is Now Improving Itself", "id": "mERBjn6JotM", "score": 8, "views": 802148}, {"title": "AI Experts: These Are The Only 5 Jobs That Will Remain in 2030!", "id": "GCjmK66x_Yk", "score": 8, "views": 985662}, {"title": "We’re Racing Toward AI We Can’t Control | For Humanity #79", "id": "LQHp90R5wEE", "score": 8, "views": 183971}, {"title": "The Secret Plan Behind Artificial Intelligence", "id": "WP5sQhGlxj4", "score": 8, "views": 1831435}, {"title": "Godfather of AI WARNS: \"You Have No Idea What's Coming\"", "id": "5KmopXwjXik", "score": 8, "views": 6340987}, {"title": "AI Is A Massive Problem. Here's Why.", "id": "A3HjNYDIhGU", "score": 7, "views": 730877}, {"title": "We're Not Ready for Superintelligence", "id": "5KVDDfAkRgc", "score": 7, "views": 10646943}, {"title": "AI2027: Is this how AI might destroy humanity? - BBC World Service", "id": "1UufaK3pQMg", "score": 7, "views": 11263959}, {"title": "AI 2027: A Realistic Scenario of AI Takeover", "id": "k_onqn68GHY", "score": 7, "views": 4435137}, {"title": "Robot Plumbers, Robot Armies, and Our Imminent A.I. Future | Interesting Times with Ross Douthat", "id": "wNJJ9QUabkA", "score": 7, "views": 661854}, {"title": "This is how humanity loses control of AI | Battle Board | Daily Mail", "id": "Zv941c6yfLE", "score": 7, "views": 102243}, {"title": "What Happens If AI Just Keeps Getting Smarter?", "id": "c9qsHS4GP5M", "score": 7, "views": 890326}, {"title": "Can we just... pause AI?", "id": "tUB_uvSqiw8", "score": 6, "views": 99690}, {"title": "Scientists Discuss the AI Alignment Problem", "id": "JRQDc55Aido", "score": 6, "views": 312955}, {"title": "A brief update on the AI apocalypse", "id": "QtiTjXuZh30", "score": 6, "views": 100521}, {"title": "Experts tested what AI would do to save itself. Here's what happened.", "id": "BcQb_8hmxSI", "score": 6, "views": 2481341}, {"title": "AI 2027: month-by-month model of intelligence explosion — Scott Alexander & Daniel Kokotajlo", "id": "htOvH12T7mU", "score": 6, "views": 337026}, {"title": "We're Not Ready for Artificial General Intelligence - Will MacAskill", "id": "sm7n1KfBXeI", "score": 5, "views": 149244}, {"title": "Demis Hassabis On The Future of Work in the Age of AI", "id": "CRraHg4Ks_g", "score": 5, "views": 751097}, {"title": "How AI tells Israel who to bomb", "id": "xGqYbXL3kZc", "score": 5, "views": 820316}, {"title": "The AI Bubble Is About To Burst", "id": "2FohHLZTHmM", "score": 5, "views": 532965}, {"title": "She Fell in Love with ChatGPT Model 4o | For Humanity Ep. 80", "id": "Mqek7K1w6_A", "score": 5, "views": 149540}, {"title": "The Marketing Expert Who Wants to Save the World from AI | For Humanity 82", "id": "AAw2yd2WKgo", "score": 5, "views": 492371}, {"title": "MIT's AI Discovers New Science - \"Intelligence Explosion\"", "id": "KPBqFQKtqP0", "score": 5, "views": 165935}, {"title": "O Verdadeiro Problema de Inteligências Artificiais", "id": "IH-wBijX53M", "score": 5, "views": 2215410}, {"title": "We Investigated Al Psychosis. What We Found Will Shock You", "id": "zkGk_A4noxI", "score": 5, "views": 2510173}, {"title": "Sam Harris: Is AI aligned with our human interests?", "id": "OjBKDaFw_2I", "score": 4, "views": 88893}, {"title": "Full interview: \"Godfather of AI\" shares prediction for future of AI, issues warnings", "id": "qyH3NxFz3Aw", "score": 4, "views": 1241339}, {"title": "A.I. ‐ Humanity's Final Invention?", "id": "fa8k8IQ1_X0", "score": 4, "views": 11812226}, {"title": "Taking AI Doom Seriously For 62 Minutes", "id": "Qg5QXY_qZuI", "score": 4, "views": 428600}, {"title": "The Real Reason Robots Shouldn’t Look Like Humans | Supercut", "id": "eLVAMG_3fLg", "score": 4, "views": 5873537}, {"title": "Scientists Left 1000 AIs Alone in Minecraft. They Created A Civilization.", "id": "uRDBco-cSK4", "score": 4, "views": 2013013}, {"title": "Max Tegmark Says Physics Just Swallowed AI", "id": "-gekVfUAS7c", "score": 4, "views": 287147}, {"title": "We Are Underestimating AI", "id": "Z8BQr07pQa0", "score": 4, "views": 333706}, {"title": "Harvard just discovered what AI actually is", "id": "nDL3Ch7Nz8c", "score": 4, "views": 872958}, {"title": "The Future of AI According to Science", "id": "zWM_vXdesqE", "score": 3, "views": 208314}, {"title": "What We Get Wrong About AI (feat. former Google CEO)", "id": "MWHN6ojlVXI", "score": 3, "views": 1336109}, {"title": "What Did Ilya See?", "id": "glWvwvhZkQ8", "score": 3, "views": 488768}, {"title": "Anthropic’s New AI Solves Problems…By Cheating", "id": "Ersv1ogj7Jo", "score": 3, "views": 163422}, {"title": "You Actually Do Need to Understand Mythos", "id": "V6pgZKVcKpw", "score": 3, "views": 1156152}, {"title": "AI 2027 Co-Authors Map Out AI’s Spread of Outcomes on Humanity", "id": "yxDTbFZbmLg", "score": 3, "views": 110590}, {"title": "Countdown to Superintelligence | Sam Harris and Daniel Kokatajlo (Making Sense #420)", "id": "zqbXolVH2h8", "score": 3, "views": 190587}, {"title": "Why AI Agents are either the best or worst thing we’ve ever built", "id": "WnzR5aOElvw", "score": 3, "views": 842305}, {"title": "The Entire History of Artificial Intelligence (Last 100 Years)", "id": "mSd9nmPM7Vg", "score": 3, "views": 223320}, {"title": "the state of the ai bubble", "id": "2U6bJEFC97c", "score": 3, "views": 1790221}, {"title": "What a 100-year-old horse teaches us about AI", "id": "eP1dSWFqKVs", "score": 2, "views": 433140}, {"title": "Can clean energy handle the AI boom?", "id": "YGfJeH5HRDQ", "score": 2, "views": 320692}, {"title": "Sam Altman Shows Me GPT 5... And What's Next", "id": "hmtuvNfytjM", "score": 2, "views": 4609437}, {"title": "How difficult is AI alignment? | Anthropic Research Salon", "id": "IPmt8b-qLgk", "score": 1, "views": 41658}, {"title": "GAEA Talks - The Future of AI (Part 2) with Professor Yi-Zhe Song", "id": "eOXnlbKndDY", "score": 1, "views": 279937}, {"title": "When AIs act emotional", "id": "D4XTefP3Lsc", "score": 1, "views": 277835}, {"title": "Recursion Is The Next Scaling Law In AI", "id": "DGtUUMNYLcc", "score": 1, "views": 12984}];
@@ -171,14 +155,6 @@ function formatViews(n) {
   else if (n >= 1e3) s = (n/1e3).toFixed(n >= 1e4 ? 0 : 1).replace(/\.0$/, '') + 'K';
   else s = String(n);
   return s + ' views';
-}
-function formatCompact(n) {
-  if (n == null || isNaN(n)) return '0';
-  n = Number(n);
-  if (n >= 1e9) return (n/1e9).toFixed(1).replace(/\.0$/, '') + 'B';
-  if (n >= 1e6) return (n/1e6).toFixed(1).replace(/\.0$/, '') + 'M';
-  if (n >= 1e3) return (n/1e3).toFixed(n >= 1e4 ? 0 : 1).replace(/\.0$/, '') + 'K';
-  return String(Math.round(n));
 }
 function metaLine(channel, views) {
   var parts = []; if (channel) parts.push(escapeHtml(channel));
@@ -308,75 +284,8 @@ function renderBucketAxis() {
     ax.appendChild(row);
   });
 }
-function rebuildAll() { rebuildLayoutMaps(); renderAxis(); renderBucketAxis(); renderThumbs(); renderCumulativeChart(); }
+function rebuildAll() { rebuildLayoutMaps(); renderAxis(); renderBucketAxis(); renderThumbs(); }
 
-function renderCumulativeChart() {
-  var svg = document.getElementById('cumChart'); if (!svg) return;
-  // Size viewBox to the actual container so text & strokes render at 1:1 (no stretching)
-  var container = svg.parentElement;
-  var W = Math.max(600, container ? container.clientWidth : 1000);
-  var H = 460;
-  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-  svg.setAttribute('width',  W);
-  svg.setAttribute('height', H);
-  var pad = { l: 70, r: 30, t: 30, b: 40 };
-  var innerW = W - pad.l - pad.r, innerH = H - pad.t - pad.b;
-  var scores = Object.keys(byScore).map(Number).sort(function (a, b) { return a - b; });
-  var pts = [];
-  scores.forEach(function (s) {
-    var items = byScore[s];
-    var sum = items.reduce(function (acc, d) { return acc + (Number(d.views) || 0); }, 0);
-    var avg = items.length > 0 ? sum / items.length : 0;
-    var xPct = scoreXMap[s]; if (xPct == null) return;
-    pts.push({ score: s, cum: avg, x: pad.l + (xPct / 100) * innerW });
-  });
-  pts.sort(function (a, b) { return a.x - b.x; });
-  if (pts.length === 0) { svg.innerHTML = ''; return; }
-  // Cumulative grows from right (low) to left (high), so the leftmost (smallest x) holds the max.
-  var maxCum = pts.reduce(function (m, p) { return p.cum > m ? p.cum : m; }, 0);
-  function niceMax(v) {
-    if (v <= 0) return 1;
-    var pow = Math.pow(10, Math.floor(Math.log10(v))); var n = v / pow;
-    var nice = n < 1.5 ? 1.5 : n < 2 ? 2 : n < 3 ? 3 : n < 5 ? 5 : n < 7.5 ? 7.5 : 10;
-    return nice * pow;
-  }
-  var yMax = niceMax(maxCum);
-  function yFor(cum) { return pad.t + innerH * (1 - cum / yMax); }
-  pts.forEach(function (p) { p.y = yFor(p.cum); });
-  function buildPath(points, closeToBaseline) {
-    if (points.length === 0) return '';
-    var d = 'M ' + points[0].x.toFixed(2) + ',' + points[0].y.toFixed(2);
-    for (var i = 1; i < points.length; i++) {
-      var p0 = points[i - 1], p1 = points[i];
-      var mx = ((p0.x + p1.x) / 2).toFixed(2);
-      d += ' C ' + mx + ',' + p0.y.toFixed(2) + ' ' + mx + ',' + p1.y.toFixed(2) + ' ' + p1.x.toFixed(2) + ',' + p1.y.toFixed(2);
-    }
-    if (closeToBaseline) {
-      var last = points[points.length - 1], first = points[0];
-      d += ' L ' + last.x.toFixed(2) + ',' + (pad.t + innerH);
-      d += ' L ' + first.x.toFixed(2) + ',' + (pad.t + innerH);
-      d += ' Z';
-    }
-    return d;
-  }
-  var nGrid = 5; var gridLines = '';
-  for (var i = 0; i <= nGrid; i++) {
-    var v = (yMax * i) / nGrid; var y = yFor(v);
-    gridLines += '<line x1="' + pad.l + '" x2="' + (W - pad.r) + '" y1="' + y.toFixed(2) + '" y2="' + y.toFixed(2) + '"/>';
-    gridLines += '<text x="' + (pad.l - 8) + '" y="' + (y + 3).toFixed(2) + '" text-anchor="end">' + formatCompact(v) + '</text>';
-  }
-  var xTicks = '';
-  pts.forEach(function (p) { xTicks += '<text x="' + p.x.toFixed(2) + '" y="' + (H - pad.b + 18) + '" text-anchor="middle">' + p.score + '</text>'; });
-  var defs = '<defs><linearGradient id="cumGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#b03d2c" stop-opacity="0.30"/><stop offset="100%" stop-color="#b03d2c" stop-opacity="0.02"/></linearGradient></defs>';
-  var area = '<path class="area" d="' + buildPath(pts, true) + '"/>';
-  var curve = '<path class="curve" d="' + buildPath(pts, false) + '"/>';
-  var pointsSvg = pts.map(function (p) {
-    var labelY = Math.max(pad.t + 12, p.y - 10);
-    return '<circle class="point" cx="' + p.x.toFixed(2) + '" cy="' + p.y.toFixed(2) + '" r="3.5"/>' +
-           '<text class="point-label" x="' + p.x.toFixed(2) + '" y="' + labelY.toFixed(2) + '" text-anchor="middle">' + formatCompact(p.cum) + '</text>';
-  }).join('');
-  svg.innerHTML = defs + '<g class="y-grid">' + gridLines + '</g>' + area + curve + '<g class="x-axis">' + xTicks + '</g>' + pointsSvg;
-}
 
 function refreshLabel(d) {
   var el = thumbsById[d.id]; if (!el) return;
@@ -440,4 +349,82 @@ function attachDragHandlers(thumbEl, d, linkEl) {
     dropIndicator.style.display = 'none';
     applyDrop(d, target);
   }
-  linkEl.addEventListener('click', function (e) { if (didDrag) { e.preventDefault(); didDrag = fal
+  linkEl.addEventListener('click', function (e) { if (didDrag) { e.preventDefault(); didDrag = false; } });
+}
+function viewportToStageCoords(e) {
+  var wrapRect = wrap.getBoundingClientRect();
+  return { x: e.clientX - wrapRect.left, y: e.clientY - wrapRect.top, stageW: stage.offsetWidth, stageH: stage.offsetHeight };
+}
+function findClosestPopulatedScoreToX(xPct) {
+  var sec = SECTIONS[Math.max(0, Math.min(4, Math.floor(xPct / 20)))];
+  var pop = [];
+  for (var s = sec.lo; s <= sec.hi; s++) { if (byScore[s] && byScore[s].length) pop.push(s); }
+  if (pop.length === 0) return Math.floor((sec.lo + sec.hi) / 2);
+  if (pop.length === 1) return pop[0];
+  var localX = xPct - sec.left;
+  var idx = Math.max(0, Math.min(pop.length - 1, Math.floor(localX / (20 / pop.length))));
+  return pop[idx];
+}
+function computeDropTarget(e) {
+  var c = viewportToStageCoords(e);
+  var xPct = (c.x / c.stageW) * 100;
+  var score = findClosestPopulatedScoreToX(xPct);
+  if (viewMode === 'stack') {
+    var stackIdx = Math.max(0, Math.round((c.y - STACK_TOP) / STACK_ROW));
+    return { score: score, stackIdx: stackIdx };
+  }
+  return { score: score };
+}
+function updateDropIndicator(e, draggedItem) {
+  var target = computeDropTarget(e);
+  var stageW = stage.offsetWidth, stageH = stage.offsetHeight;
+  var xPct;
+  if (scoreXMap[target.score] != null) xPct = scoreXMap[target.score];
+  else { var sec = SECTIONS.find(function (s) { return target.score >= s.lo && target.score <= s.hi; }); xPct = sec.left + 10; }
+  var insetW = stageW - THUMB_W;
+  var leftPx = HALF + insetW * (xPct / 100);
+  var topPx;
+  if (viewMode === 'stack') {
+    topPx = STACK_TOP + target.stackIdx * STACK_ROW - 4;
+  } else {
+    topPx = logYPx(draggedItem.views) + THUMB_H / 2 - 4;
+  }
+  dropIndicator.style.left = leftPx + 'px';
+  dropIndicator.style.top = topPx + 'px';
+  dropIndicator.style.display = 'block';
+}
+function applyDrop(d, target) {
+  if (viewMode === 'stack') {
+    var oldIdx = DATA.indexOf(d); if (oldIdx >= 0) DATA.splice(oldIdx, 1);
+    d.score = target.score;
+    var sameScoreSeen = 0, inserted = false;
+    for (var i = 0; i < DATA.length; i++) {
+      if (DATA[i].score === target.score) {
+        if (sameScoreSeen === target.stackIdx) { DATA.splice(i, 0, d); inserted = true; break; }
+        sameScoreSeen++;
+      }
+    }
+    if (!inserted) DATA.push(d);
+    saveLayout(); rebuildAll(); return;
+  }
+  if (d.score === target.score) { rebuildAll(); return; }
+  d.score = target.score;
+  saveLayout(); rebuildAll();
+}
+
+document.querySelectorAll('#modeToggle button').forEach(function (b) {
+  b.addEventListener('click', function () { setViewMode(b.dataset.mode); });
+});
+
+rebuildAll();
+updateModeUI();
+fetchMissingChannels();
+
+var _resizeT = null;
+window.addEventListener('resize', function () {
+  clearTimeout(_resizeT);
+  _resizeT = setTimeout(function () { if (viewMode === 'buckets') rebuildAll(); }, 120);
+});
+</script>
+</body>
+</html>
